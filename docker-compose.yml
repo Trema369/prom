@@ -3,33 +3,33 @@
 # in Coolify's Environment tab (or a local .env for `docker compose up`).
 
 services:
-  server:
-    build: ./server
-    restart: unless-stopped
-    environment:
-      DATA_DIR: /data
-      PROD: "true"
-      SITE_PASSWORD: ${SITE_PASSWORD:-}
-      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
-      DISCORD_MENTION_ID: ${DISCORD_MENTION_ID:-}
-      COOKIE_SECRET: ${COOKIE_SECRET:-}
-    volumes:
-      - prom-data:/data
+    server:
+        build: ./server
+        restart: unless-stopped
+        environment:
+            DATA_DIR: /data
+            PROD: 'true'
+            SITE_PASSWORD: ${SITE_PASSWORD:-}
+            DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+            DISCORD_MENTION_ID: ${DISCORD_MENTION_ID:-}
+            COOKIE_SECRET: ${COOKIE_SECRET:-}
+        volumes:
+            - prom-data:/data
 
-  web:
-    build: ./web
-    restart: unless-stopped
-    environment:
-      SERVER_ORIGIN: http://server:8080
-      NODE_ENV: production
-    expose:
-      - "3000"
-    depends_on:
-      - server
-    labels:
-      - coolify.managed=true
-      - coolify.port=3000
-      - traefik.http.services.prom-web.loadbalancer.server.port=3000
+    web:
+        build: ./web
+        restart: unless-stopped
+        environment:
+            SERVER_ORIGIN: http://server:8080
+            NODE_ENV: production
+        expose:
+            - '3000'
+        depends_on:
+            - server
+        labels:
+            - coolify.managed=true
+            - coolify.port=3000
+            - traefik.http.services.prom-web.loadbalancer.server.port=3000
 
 volumes:
-  prom-data:
+    prom-data:
