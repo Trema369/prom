@@ -1,0 +1,45 @@
+# One public service (web). It proxies /api/* to the internal Go service.
+# Coolify: deploy this compose file, point the domain at the `web` service : 3000.
+# Set SITE_PASSWORD / DISCORD_WEBHOOK_URL / DISCORD_MENTION_ID / COOKIE_SECRET
+# in Coolify's Environment tab (or a local .env for `docker compose up`).
+
+services:
+  server:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      DATA_DIR: /data
+      PROD: "true"
+      SITE_PASSWORD: ${SITE_PASSWORD:-}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+      DISCORD_MENTION_ID: ${DISCORD_MENTION_ID:-}
+      COOKIE_SECRET: ${COOKIE_SECRET:-}
+    volumes:
+      - prom-data:/data
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    environment:
+      SERVER_ORIGIN: http://server:8080
+      NODE_ENV: production
+    expose:
+      - "3000"
+    depends_on:
+      - server
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prom.rule=Host(`${DOMAIN:-prom.yourdomain.com}`)"
+      - "traefik.http.routers.prom.entrypoints=websecure"
+      - "traefik.http.routers.prom.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prom.loadbalancer.server.port=3000"
+    networks:
+      - coolify
+      - default
+
+networks:
+  coolify:
+    external: true
+
+volumes:
+  prom-data:
