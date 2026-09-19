@@ -2,9 +2,11 @@ package internal
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -31,6 +33,7 @@ func Routes(cfg Config, store *Store) http.Handler {
 	mux.HandleFunc("GET /api/state", a.handleState)
 	mux.HandleFunc("POST /api/unlock", a.handleUnlock)
 	mux.HandleFunc("POST /api/answer", a.handleAnswer)
+	mux.HandleFunc("POST /api/reset", a.handleReset)
 	return logging(mux)
 }
 
@@ -118,6 +121,21 @@ func (a *api) handleAnswer(w http.ResponseWriter, r *http.Request) {
 		"at":      res.Record.At,
 		"changed": res.Changed,
 	})
+}
+
+// --- POST /api/reset ------------------------------------------------
+
+func (a *api) handleReset(w http.ResponseWriter, r *http.Request) {
+	if !a.cfg.isUnlocked(r) {
+		writeErr(w, 401, "Locked.")
+		return
+	}
+	if err := a.store.Reset(); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Printf("reset: %v", err)
+		writeErr(w, 500, "Could not reset.")
+		return
+	}
+	writeJSON(w, 200, map[string]bool{"ok": true})
 }
 
 // --- helpers ---------------------------------------------------------

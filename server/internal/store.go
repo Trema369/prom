@@ -132,6 +132,14 @@ func (s *Store) Set(a Answer) (SetResult, error) {
 	return SetResult{Record: &cp, Changed: true, FromNo: fromNo}, nil
 }
 
+// Reset clears the stored answer so the flow starts over.
+func (s *Store) Reset() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.rec = nil
+	return os.Remove(s.path)
+}
+
 // persist writes the record atomically (temp file + rename).
 func (s *Store) persist(r *Record) error {
 	b, err := json.MarshalIndent(r, "", "  ")
